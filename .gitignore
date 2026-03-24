@@ -11,6 +11,7 @@ ENV/
 # Build artifacts
 build/
 dist/
+timer.txt
 
 # PyInstaller metadata
 *.spec
