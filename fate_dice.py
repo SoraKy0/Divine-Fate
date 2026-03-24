@@ -2,9 +2,15 @@ import random
 import customtkinter as ctk
 import time
 import os
+import sys
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+
+def resource_path(filename):
+    base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, filename)
 
 # ------------------ TIMER LOAD ------------------
 
@@ -76,6 +82,11 @@ def roll_fate():
 root = ctk.CTk()
 root.title("Divine Fate")
 root.geometry("350x300")
+
+try:
+    root.iconbitmap(resource_path("divinetree.ico"))
+except Exception:
+    pass
 
 title = ctk.CTkLabel(
     root,
