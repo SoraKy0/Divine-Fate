@@ -3,23 +3,56 @@ import customtkinter as ctk
 import time
 import os
 import sys
+import json
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+STATE_FILE = "timer.txt"
+CHOICES = ["Draw", "Read Book", "Just Chill", "Learn Japanese", "Play Steam Deck"]
+COLORS = {
+    "Draw": "#ff9f1c",
+    "Read Book": "#4da6ff",
+    "Just Chill": "#8c00ff",
+    "Learn Japanese": "#00ffcc",
+    "Play Steam Deck": "#ff4d4d"
+}
 
 
 def resource_path(filename):
     base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_dir, filename)
 
-# ------------------ TIMER LOAD ------------------
+# ------------------ STATE LOAD ------------------
 
-def load_timer():
+def load_state():
     try:
-        with open("timer.txt", "r") as f:
-            return float(f.read())
-    except:
-        return None
+        with open(STATE_FILE, "r") as f:
+            saved = f.read().strip()
+
+        if not saved:
+            return {"end_time": None, "choice": None}
+
+        try:
+            state = json.loads(saved)
+            return {
+                "end_time": state.get("end_time"),
+                "choice": state.get("choice")
+            }
+        except json.JSONDecodeError:
+            return {"end_time": float(saved), "choice": None}
+    except Exception:
+        return {"end_time": None, "choice": None}
+
+
+def save_state():
+    with open(STATE_FILE, "w") as f:
+        json.dump({"end_time": end_time, "choice": current_choice}, f)
+
+
+def clear_state():
+    if os.path.exists(STATE_FILE):
+        os.remove(STATE_FILE)
 
 # ------------------ TIMER UPDATE ------------------
 
@@ -41,30 +74,18 @@ def update_timer():
         timer_label.configure(text="Done!")
         button.configure(state="normal")
         lock_label.pack_forget()
-
-        if os.path.exists("timer.txt"):
-            os.remove("timer.txt")
+        clear_state()
 
 # ------------------ BUTTON ACTION ------------------
 
 def roll_fate():
-    global end_time
+    global end_time, current_choice
 
-    choices = ["Draw", "Read Book", "Just Chill", "Learn Japanese", "Play Steam Deck"]
-
-    colors = {
-        "Draw": "#ff9f1c",
-        "Read Book": "#4da6ff",
-        "Just Chill": "#8c00ff",
-        "Learn Japanese": "#00ffcc",
-        "Play Steam Deck": "#ff4d4d"
-    }
-
-    choice = random.choice(choices)
+    current_choice = random.choice(CHOICES)
 
     result.configure(
-        text=f"Your Fate: {choice}",
-        text_color=colors[choice]
+        text=f"Your Fate: {current_choice}",
+        text_color=COLORS[current_choice]
     )
 
     button.configure(state="disabled")
@@ -72,9 +93,7 @@ def roll_fate():
 
     end_time = time.time() + 600
 
-    with open("timer.txt", "w") as f:
-        f.write(str(end_time))
-
+    save_state()
     update_timer()
 
 # ------------------ UI ------------------
@@ -146,11 +165,23 @@ result.pack(pady=20)
 
 # ------------------ RESUME TIMER ------------------
 
-end_time = load_timer()
+saved_state = load_state()
+end_time = saved_state["end_time"]
+current_choice = saved_state["choice"]
+
+if current_choice in COLORS:
+    result.configure(
+        text=f"Your Fate: {current_choice}",
+        text_color=COLORS[current_choice]
+    )
 
 if end_time and end_time > time.time():
     button.configure(state="disabled")
     lock_label.pack()
     update_timer()
+else:
+    end_time = None
+    if current_choice is not None:
+        clear_state()
 
 root.mainloop()
